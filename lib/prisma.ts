@@ -10,7 +10,18 @@ function createClient() {
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set");
   }
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  return new PrismaClient({
+    adapter: new PrismaPg({
+      connectionString,
+      // Neon closes idle connections (and suspends an idle database). A pooled connection that
+      // went stale would make the next query fail with "Server has closed the connection", so
+      // drop idle connections after 10s - well before the server does - and keep live ones alive.
+      idleTimeoutMillis: 10_000,
+      keepAlive: true,
+      connectionTimeoutMillis: 15_000, // a waking Neon database can take a few seconds to answer
+      max: 5,
+    }),
+  });
 }
 
 export const prisma = globalForPrisma.prisma ?? createClient();

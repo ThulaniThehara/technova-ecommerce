@@ -1,17 +1,11 @@
 import { Prisma } from "../generated/prisma/client";
+import { HttpError } from "./errors";
 import { prisma } from "./prisma";
 import { formatOrderNumber } from "./utils";
 import type { CheckoutInput } from "./validations";
 
 // A business-rule failure that is safe to show to the customer.
-export class OrderError extends Error {
-  constructor(
-    message: string,
-    public status = 409,
-  ) {
-    super(message);
-  }
-}
+export class OrderError extends HttpError {}
 
 // Stock policy: stock is decremented HERE, when the order is created, inside one transaction.
 // It is restored when the order is CANCELLED or its payment FAILED (handled in later phases).
@@ -82,12 +76,43 @@ export async function createOrder(input: CheckoutInput) {
   );
 }
 
+type Tx = Prisma.TransactionClient;
+
 /**
- * Settle a PayHere payment. Both outcomes are driven by a conditional updateMany whose WHERE
- * includes `paymentStatus: PENDING`, so Postgres decides the winner: if PayHere delivers the
- * same notification twice (it retries), the second call changes 0 rows and we do nothing.
- * That single guard is what makes this handler idempotent and keeps stock from being
- * restored twice.
+ * THE one place an order is cancelled and its stock given back. Used by both the admin
+ * "cancel order" action and a failed PayHere payment.
+ *
+ * It is idempotent: the status flip is a conditional updateMany (`orderStatus != CANCELLED`),
+ * and stock is only restored if that flip actually changed a row. So no matter how many times,
+ * or in which order, an admin cancel and a PayHere failure notification arrive, stock is
+ * restored exactly once. Must be called inside a transaction.
+ *
+ * Returns true if this call performed the cancellation.
+ */
+export async function cancelOrderAndRestoreStock(
+  tx: Tx,
+  where: { id: string } | { orderNumber: number },
+): Promise<boolean> {
+  const flipped = await tx.order.updateMany({
+    where: { ...where, orderStatus: { not: "CANCELLED" } },
+    data: { orderStatus: "CANCELLED" },
+  });
+  if (flipped.count === 0) return false;
+
+  const items = await tx.orderItem.findMany({ where: { order: where } });
+  for (const item of items) {
+    await tx.product.update({
+      where: { id: item.productId },
+      data: { stock: { increment: item.quantity } },
+    });
+  }
+  return true;
+}
+
+/**
+ * Settle a PayHere payment. The first step is a conditional updateMany whose WHERE includes
+ * `paymentStatus: PENDING`, so Postgres decides the winner: if PayHere delivers the same
+ * notification twice (it retries), the second call changes 0 rows and we stop there.
  */
 export async function settlePayHereOrder(
   orderNumber: number,
@@ -96,25 +121,24 @@ export async function settlePayHereOrder(
 ): Promise<"applied" | "already-settled"> {
   return prisma.$transaction(
     async (tx) => {
-      const updated = await tx.order.updateMany({
+      const payment = await tx.order.updateMany({
         where: { orderNumber, paymentMethod: "PAYHERE", paymentStatus: "PENDING" },
-        data:
-          outcome === "PAID"
-            ? { paymentStatus: "PAID", orderStatus: "PROCESSING", payherePaymentId: paymentId ?? null }
-            : { paymentStatus: "FAILED", orderStatus: "CANCELLED", payherePaymentId: paymentId ?? null },
+        data: { paymentStatus: outcome, payherePaymentId: paymentId ?? null },
       });
-      if (updated.count === 0) return "already-settled";
+      if (payment.count === 0) return "already-settled";
 
-      // Stock policy: stock was taken when the order was created, so a failed/cancelled
-      // payment must give it back.
-      if (outcome === "FAILED") {
-        const items = await tx.orderItem.findMany({ where: { order: { orderNumber } } });
-        for (const item of items) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: { increment: item.quantity } },
-          });
-        }
+      if (outcome === "PAID") {
+        // Only a still-PENDING order moves to PROCESSING. If an admin already cancelled it,
+        // it stays CANCELLED (the money then needs a manual refund) rather than being revived
+        // without any stock behind it.
+        await tx.order.updateMany({
+          where: { orderNumber, orderStatus: "PENDING" },
+          data: { orderStatus: "PROCESSING" },
+        });
+      } else {
+        // Stock policy: stock was taken when the order was created, so a failed payment
+        // cancels the order and gives it back (a no-op if an admin already did).
+        await cancelOrderAndRestoreStock(tx, { orderNumber });
       }
       return "applied";
     },

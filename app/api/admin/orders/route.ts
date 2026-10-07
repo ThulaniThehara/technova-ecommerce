@@ -1,24 +1,18 @@
-import { NextResponse } from "next/server";
+import { listAdminOrders, parseStatusFilter } from "@/lib/admin-orders";
+import { handleError, ok } from "@/lib/api";
 import { requireAdmin } from "@/lib/auth";
-import { serializeOrder } from "@/lib/orders";
-import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/admin/orders - admin only (second gate; proxy.ts is the first)
-export async function GET() {
+// GET /api/admin/orders?status=PENDING - admin only (second gate; proxy.ts is the first)
+export async function GET(request: Request) {
   const { response } = await requireAdmin();
   if (response) return response;
 
   try {
-    const orders = await prisma.order.findMany({
-      include: { items: true },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    });
-    return NextResponse.json({ success: true, data: orders.map(serializeOrder) });
+    const status = parseStatusFilter(new URL(request.url).searchParams.get("status"));
+    return ok(await listAdminOrders(status));
   } catch (error) {
-    console.error("GET /api/admin/orders failed", error);
-    return NextResponse.json({ success: false, message: "Could not load orders" }, { status: 500 });
+    return handleError(error, "GET /api/admin/orders");
   }
 }

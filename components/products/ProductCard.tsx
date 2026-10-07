@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import type { ProductWithCategory } from "@/lib/products";
 import { formatPrice } from "@/lib/utils";
 import StockBadge from "./StockBadge";
@@ -10,7 +11,7 @@ export default function ProductCard({ product }: { product: ProductWithCategory 
       className="group flex flex-col overflow-hidden rounded-xl border border-line bg-white transition hover:border-brand-200 hover:shadow-[0_8px_30px_-12px_rgba(13,26,47,0.18)]"
     >
       <div className="hatch relative aspect-[4/3] overflow-hidden">
-        {(product.stock === 0 || product.stock <= 5) && (
+        {product.stock <= LOW_STOCK_THRESHOLD && (
           <StockBadge stock={product.stock} variant="pill" className="absolute left-3 top-3 z-10" />
         )}
         {/* Plain <img>: admin-provided image URLs can point to any host. */}

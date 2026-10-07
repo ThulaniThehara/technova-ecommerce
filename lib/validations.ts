@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ORDER_STATUSES } from "./constants";
 
 // Sri Lankan mobile: 07XXXXXXXX or +947XXXXXXXX
 export const PHONE_REGEX = /^(?:\+94|0)7\d{8}$/;
@@ -32,3 +33,63 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+// ───────────── Admin: products ─────────────
+
+// Only http(s) URLs are accepted: the value ends up in an <img src>, and a "javascript:" or
+// "data:" URL there would be an injection vector.
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+// The database column is Decimal(10,2): at most 99,999,999.99 with two decimal places.
+const price = z
+  .number({ error: "Enter a valid price" })
+  .positive("Price must be greater than 0")
+  .max(99999999.99, "Price is too large")
+  .refine((v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6, "Use at most 2 decimal places");
+
+// Shared by the Add/Edit form (client) and the admin API (server).
+export const productSchema = z.object({
+  name: z.string().trim().min(2, "Enter a product name").max(120, "Name is too long"),
+  description: z.string().trim().min(10, "Description should be at least 10 characters").max(2000, "Description is too long"),
+  price,
+  stock: z
+    .number({ error: "Enter the stock quantity" })
+    .int("Stock must be a whole number")
+    .min(0, "Stock cannot be negative")
+    .max(100000, "Stock is too large"),
+  // Empty is allowed: the server fills in a placeholder image.
+  imageUrl: z
+    .string()
+    .trim()
+    .max(500, "Image URL is too long")
+    .refine((v) => v === "" || isHttpUrl(v), "Enter a valid http(s) image URL"),
+  categoryId: z.string().min(1, "Choose a category"),
+  isActive: z.boolean(),
+});
+
+export type ProductInput = z.infer<typeof productSchema>;
+export type ProductFieldErrors = Partial<Record<keyof ProductInput, string[]>>;
+
+// PATCH accepts any subset (inline stock edit, active toggle, full edit) but never unknown keys.
+export const productPatchSchema = productSchema
+  .partial()
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, "Nothing to update");
+
+// ───────────── Admin: orders ─────────────
+
+export const orderPatchSchema = z
+  .object({
+    orderStatus: z.enum(ORDER_STATUSES).optional(),
+    // Only meaningful for WhatsApp orders, which are paid outside the site.
+    paymentStatus: z.enum(["PENDING", "PAID"]).optional(),
+  })
+  .strict()
+  .refine((v) => v.orderStatus !== undefined || v.paymentStatus !== undefined, "Nothing to update");

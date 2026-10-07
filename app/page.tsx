@@ -1,8 +1,9 @@
-import { ArrowRight, Headphones, Laptop, ShieldCheck, Smartphone, Truck, Watch, type LucideIcon } from "lucide-react";
+import { Headphones, Laptop, ShieldCheck, Smartphone, Truck, Watch, type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import HeroSection from "@/components/hero/HeroSection";
 import ProductCard from "@/components/products/ProductCard";
 import { getCategories, getFeaturedProducts } from "@/lib/products";
-import { btnOutline, btnPrimary, sectionTitle } from "@/lib/ui";
+import { btnPrimary, sectionTitle } from "@/lib/ui";
 
 // Stock and prices change in the admin panel, so never prerender this page at build time.
 export const dynamic = "force-dynamic";
@@ -26,35 +27,8 @@ export default async function Home() {
 
   return (
     <>
-      {/* Hero */}
-      <section className="bg-white">
-        <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-20">
-          <div>
-            <span className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
-              New arrivals 2026
-            </span>
-            <h1 className="mt-5 text-4xl font-bold leading-[1.08] text-ink-900 sm:text-5xl lg:text-[56px]">
-              Upgrade Your Tech.
-            </h1>
-            <p className="mt-5 max-w-md text-[15px] leading-relaxed text-slate-600">
-              Discover the latest smartphones, laptops, smart devices and accessories.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/products" className={btnPrimary}>
-                Shop Now <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-              <Link href="/products" className={btnOutline}>
-                Explore Categories
-              </Link>
-            </div>
-          </div>
-          <div className="hatch hidden aspect-[4/3] items-center justify-center rounded-2xl lg:flex">
-            <span className="px-6 text-center font-mono text-xs text-slate-400">
-              Smartphones · Laptops · Smart devices · Accessories
-            </span>
-          </div>
-        </div>
-      </section>
+      {/* Hero: text + animated 3D electronics showcase (tune it in components/hero/hero.config.ts) */}
+      <HeroSection />
 
       <div className="mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         {/* Categories */}
