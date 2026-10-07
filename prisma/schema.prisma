@@ -1,0 +1,127 @@
+// TechNova database schema.
+// Relationships:
+//   Category 1 ── * Product
+//   Order    1 ── * OrderItem
+//   Product  1 ── * OrderItem
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────── Enums ─────────────
+
+enum Role {
+  ADMIN
+}
+
+enum PaymentMethod {
+  PAYHERE
+  WHATSAPP
+}
+
+// Money lifecycle - independent of fulfilment.
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+// Stock policy: stock is decremented when the order is CREATED (inside a transaction)
+// and restored when the order becomes CANCELLED or its payment becomes FAILED.
+// Fulfilment lifecycle: PENDING -> PROCESSING -> SHIPPED -> COMPLETED, or CANCELLED.
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
+// ───────────── Models ─────────────
+
+// Administrative accounts only (no customer registration in scope).
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String // bcrypt hash, never the plaintext password
+  role         Role     @default(ADMIN)
+  createdAt    DateTime @default(now())
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  products Product[]
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  description String
+  price       Decimal     @db.Decimal(10, 2)
+  stock       Int         @default(0)
+  imageUrl    String
+  // Soft-delete flag: ordered products are never hard-deleted, only deactivated.
+  isActive    Boolean     @default(true)
+  categoryId  String
+  // Restrict: a category that still has products cannot be deleted.
+  category    Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([isActive])
+}
+
+model Order {
+  id               String        @id @default(cuid())
+  // Autoincrement integer; displayed as TN-0001 via formatOrderNumber() in lib/utils.ts
+  // (shown to customer/admin and sent in the WhatsApp message).
+  orderNumber      Int           @unique @default(autoincrement())
+  customerName     String
+  customerEmail    String
+  phone            String
+  address          String
+  city             String
+  notes            String?
+  // Authoritative total, calculated on the server from DB prices.
+  total            Decimal       @db.Decimal(10, 2)
+  paymentMethod    PaymentMethod
+  paymentStatus    PaymentStatus @default(PENDING)
+  orderStatus      OrderStatus   @default(PENDING)
+  // PayHere's own payment reference, stored from the verified notification.
+  payherePaymentId String?
+  items            OrderItem[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([orderStatus])
+  @@index([paymentStatus])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  // Cascade: deleting an order removes its line items.
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  // Restrict: keeps the link to history; products with orders must be deactivated, not deleted.
+  product     Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  // Snapshot of what the customer actually bought and paid, immune to later edits.
+  productName String
+  unitPrice   Decimal @db.Decimal(10, 2)
+  quantity    Int
+
+  @@index([orderId])
+  @@index([productId])
+}
