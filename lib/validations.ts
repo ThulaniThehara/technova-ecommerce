@@ -24,3 +24,11 @@ export const checkoutSchema = z.object({
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type CheckoutFieldErrors = Partial<Record<keyof CheckoutInput, string[]>>;
+
+export const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().pipe(z.email("Enter a valid email address")),
+  // bcrypt only uses the first 72 bytes; a generous cap also stops absurdly large bodies.
+  password: z.string().min(1, "Enter your password").max(200),
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;
