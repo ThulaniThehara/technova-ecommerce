@@ -23,28 +23,33 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-sm text-slate-500">
-        <Link href="/products" className="hover:text-indigo-600">Products</Link>
-        <ChevronRight className="h-4 w-4" aria-hidden />
-        <Link href={`/products?category=${product.category.slug}`} className="hover:text-indigo-600">{product.category.name}</Link>
-        <ChevronRight className="h-4 w-4" aria-hidden />
-        <span className="text-slate-900">{product.name}</span>
+        <Link href="/products" className="hover:text-brand-600">Products</Link>
+        <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+        <Link href={`/products?category=${product.category.slug}`} className="hover:text-brand-600">
+          {product.category.name}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+        <span className="text-ink-900">{product.name}</span>
       </nav>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:gap-12">
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="hatch overflow-hidden rounded-xl border border-line">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={product.imageUrl} alt={product.name} className="aspect-square w-full object-cover" />
         </div>
 
         <div className="flex flex-col gap-5">
-          <span className="text-sm font-medium uppercase tracking-wide text-indigo-600">{product.category.name}</span>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{product.name}</h1>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-3xl font-bold">{formatPrice(product.price)}</span>
+          <div>
+            <span className="text-sm font-medium text-slate-500">{product.category.name}</span>
+            <h1 className="mt-1.5 text-3xl font-bold text-ink-900 sm:text-4xl">{product.name}</h1>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="text-3xl font-bold text-ink-900">{formatPrice(product.price)}</span>
             <StockBadge stock={product.stock} />
           </div>
-          <p className="leading-relaxed text-slate-600">{product.description}</p>
-          <div className="border-t border-slate-200 pt-5">
+
+          <div className="rounded-xl border border-line bg-white p-5">
             <AddToCart
               product={{
                 id: product.id,
@@ -58,6 +63,11 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
           </div>
         </div>
       </div>
+
+      <section className="mt-12 max-w-3xl">
+        <h2 className="text-xl font-bold text-ink-900">Product description</h2>
+        <p className="mt-3 leading-relaxed text-slate-600">{product.description}</p>
+      </section>
     </div>
   );
 }

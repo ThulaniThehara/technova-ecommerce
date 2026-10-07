@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useCart } from "@/components/cart/useCart";
 import { addToCart } from "@/lib/cart-store";
+import { btnPrimary } from "@/lib/ui";
 
 type Props = {
   product: { id: string; slug: string; name: string; price: number; imageUrl: string; stock: number };
@@ -19,7 +20,7 @@ export default function AddToCart({ product }: Props) {
 
   if (product.stock === 0) {
     return (
-      <button disabled className="w-full cursor-not-allowed rounded-xl bg-slate-200 px-6 py-3.5 font-semibold text-slate-500">
+      <button disabled className="w-full cursor-not-allowed rounded-xl bg-slate-100 px-6 py-3.5 font-semibold text-slate-400">
         Out of stock
       </button>
     );
@@ -45,24 +46,24 @@ export default function AddToCart({ product }: Props) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <span className="text-sm font-medium text-slate-700">Quantity</span>
-        <div className="inline-flex items-center rounded-xl border border-slate-300 bg-white">
+        <span className="text-sm font-semibold text-ink-900">Quantity</span>
+        <div className="inline-flex items-center rounded-xl border border-line bg-white">
           <button
             type="button"
             aria-label="Decrease quantity"
-            className="flex h-11 w-11 items-center justify-center rounded-l-xl text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+            className="flex h-11 w-11 items-center justify-center rounded-l-xl text-ink-700 transition hover:bg-surface disabled:opacity-40"
             disabled={qty <= 1}
             onClick={() => setQuantity(qty - 1)}
           >
             <Minus className="h-4 w-4" />
           </button>
-          <span className="w-10 text-center font-semibold tabular-nums" aria-live="polite">{qty}</span>
+          <span className="w-10 text-center font-bold tabular-nums" aria-live="polite">{qty}</span>
           <button
             type="button"
             aria-label="Increase quantity"
-            className="flex h-11 w-11 items-center justify-center rounded-r-xl text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+            className="flex h-11 w-11 items-center justify-center rounded-r-xl text-ink-700 transition hover:bg-surface disabled:opacity-40"
             disabled={qty >= remaining}
             onClick={() => setQuantity(qty + 1)}
           >
@@ -72,20 +73,15 @@ export default function AddToCart({ product }: Props) {
         <span className="text-xs text-slate-500">Max {product.stock}</span>
       </div>
 
-      <button
-        type="button"
-        onClick={handleAdd}
-        disabled={remaining === 0}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-      >
+      <button type="button" onClick={handleAdd} disabled={remaining === 0} className={`${btnPrimary} w-full py-3.5 text-base`}>
         <ShoppingCart className="h-5 w-5" aria-hidden />
-        {remaining === 0 ? "All available stock is in your cart" : "Add to cart"}
+        {remaining === 0 ? "All available stock is in your cart" : "Add to Cart"}
       </button>
 
       {inCart > 0 && (
         <p className="text-sm text-slate-600">
           {inCart} in your cart.{" "}
-          <Link href="/cart" className="font-medium text-indigo-600 hover:underline">View cart</Link>
+          <Link href="/cart" className="font-semibold text-brand-600 hover:underline">View cart</Link>
         </p>
       )}
     </div>

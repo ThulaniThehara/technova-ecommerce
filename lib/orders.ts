@@ -82,6 +82,46 @@ export async function createOrder(input: CheckoutInput) {
   );
 }
 
+/**
+ * Settle a PayHere payment. Both outcomes are driven by a conditional updateMany whose WHERE
+ * includes `paymentStatus: PENDING`, so Postgres decides the winner: if PayHere delivers the
+ * same notification twice (it retries), the second call changes 0 rows and we do nothing.
+ * That single guard is what makes this handler idempotent and keeps stock from being
+ * restored twice.
+ */
+export async function settlePayHereOrder(
+  orderNumber: number,
+  outcome: "PAID" | "FAILED",
+  paymentId?: string,
+): Promise<"applied" | "already-settled"> {
+  return prisma.$transaction(
+    async (tx) => {
+      const updated = await tx.order.updateMany({
+        where: { orderNumber, paymentMethod: "PAYHERE", paymentStatus: "PENDING" },
+        data:
+          outcome === "PAID"
+            ? { paymentStatus: "PAID", orderStatus: "PROCESSING", payherePaymentId: paymentId ?? null }
+            : { paymentStatus: "FAILED", orderStatus: "CANCELLED", payherePaymentId: paymentId ?? null },
+      });
+      if (updated.count === 0) return "already-settled";
+
+      // Stock policy: stock was taken when the order was created, so a failed/cancelled
+      // payment must give it back.
+      if (outcome === "FAILED") {
+        const items = await tx.orderItem.findMany({ where: { order: { orderNumber } } });
+        for (const item of items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+      }
+      return "applied";
+    },
+    { maxWait: 10000, timeout: 15000 },
+  );
+}
+
 type OrderWithItems = Prisma.OrderGetPayload<{ include: { items: true } }>;
 
 // Plain JSON shape (Decimals as 2-decimal strings) for API responses and the WhatsApp message.

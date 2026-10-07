@@ -1,13 +1,36 @@
-export default function StockBadge({ stock }: { stock: number }) {
-  const [label, style] =
+/**
+ * Stock indicator. Two looks, same information:
+ *  - "dot"  : coloured dot + label, used inside product cards and detail pages
+ *  - "pill" : tinted pill, used as a corner badge on card images
+ */
+export default function StockBadge({
+  stock,
+  variant = "dot",
+  className = "",
+}: {
+  stock: number;
+  variant?: "dot" | "pill";
+  className?: string;
+}) {
+  const state =
     stock === 0
-      ? ["Out of stock", "bg-red-50 text-red-700 ring-red-600/20"]
+      ? { label: "Out of stock", dot: "bg-slate-400", text: "text-slate-500", pill: "bg-slate-100 text-slate-600" }
       : stock <= 5
-        ? [`Only ${stock} left`, "bg-amber-50 text-amber-700 ring-amber-600/20"]
-        : ["In stock", "bg-emerald-50 text-emerald-700 ring-emerald-600/20"];
+        ? { label: `Low stock — ${stock} left`, dot: "bg-amber-500", text: "text-amber-600", pill: "bg-amber-50 text-amber-700" }
+        : { label: "In stock", dot: "bg-emerald-500", text: "text-emerald-600", pill: "bg-emerald-50 text-emerald-700" };
+
+  if (variant === "pill") {
+    return (
+      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${state.pill} ${className}`}>
+        {stock === 0 ? "Out of stock" : stock <= 5 ? "Low Stock" : "In stock"}
+      </span>
+    );
+  }
+
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${style}`}>
-      {label}
+    <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${state.text} ${className}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${state.dot}`} aria-hidden />
+      {state.label}
     </span>
   );
 }

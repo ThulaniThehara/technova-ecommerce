@@ -1,12 +1,63 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   TechNova design tokens.
+   One place for the palette, so every page/component uses the same system:
+   - brand : the royal blue used for primary actions and accents
+   - ink   : the deep navy used for headings, the footer and admin panels
+   - line  : the hairline border on cards and inputs
+   --------------------------------------------------------------------------- */
 @theme inline {
+  --color-brand-50: #eff5ff;
+  --color-brand-100: #dce8ff;
+  --color-brand-200: #bfd6ff;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #1668f0;
+  --color-brand-700: #0d52c9;
+
+  --color-ink-600: #3b4a68;
+  --color-ink-700: #22365c;
+  --color-ink-800: #15243f;
+  --color-ink-900: #0d1a2f;
+
+  --color-line: #e4e9f1;
+  --color-surface: #f5f7fa;
+
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 body {
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--color-surface);
+  color: var(--color-ink-900);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings in this design are tight and bold. */
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
+}
+
+::selection {
+  background: var(--color-brand-100);
+}
+
+/* A single visible focus style across the whole system. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+/* Placeholder artwork: the diagonal hatch used wherever a product photo
+   has not been uploaded yet, matching the design mockups. */
+.hatch {
+  background-color: #eef1f6;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(148, 163, 184, 0.16) 0 1px,
+    transparent 1px 9px
+  );
 }

@@ -1,14 +1,17 @@
 "use client";
 
-import { Loader2, Lock } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Logo from "@/components/layout/Logo";
+import { btnPrimary, input, label as labelClass } from "@/lib/ui";
 import { loginSchema } from "@/lib/validations";
 
 export default function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -44,41 +47,58 @@ export default function LoginForm() {
     }
   }
 
-  const input =
-    "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200";
-
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-      <div className="flex flex-col items-center text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white">
-          <Lock className="h-6 w-6" aria-hidden />
-        </span>
-        <h1 className="mt-4 text-2xl font-bold">Admin sign in</h1>
-        <p className="mt-1 text-sm text-slate-600">TechNova store management</p>
-      </div>
+    <form onSubmit={handleSubmit} noValidate className="w-full max-w-sm">
+      <Logo href={null} />
+      <h1 className="mt-8 text-3xl font-bold text-ink-900">Admin Login</h1>
+      <p className="mt-2 text-[15px] text-slate-600">Sign in to manage products, inventory and orders.</p>
 
       {error && (
-        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p role="alert" className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {error}
         </p>
       )}
 
-      <div>
-        <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
-        <input id="email" type="email" autoComplete="username" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} className={input} />
-      </div>
-      <div>
-        <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
-        <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className={input} />
+      <div className="mt-7 space-y-5">
+        <div>
+          <label htmlFor="email" className={labelClass}>Email Address</label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="username"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={input}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="password" className={labelClass}>Password</label>
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`${input} pr-12`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-surface hover:text-ink-700"
+            >
+              {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-400"
-      >
+      <button type="submit" disabled={submitting} className={`${btnPrimary} mt-7 w-full py-3.5 text-base`}>
         {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-        {submitting ? "Signing in..." : "Sign in"}
+        {submitting ? "Signing in..." : "Sign In"}
       </button>
     </form>
   );
