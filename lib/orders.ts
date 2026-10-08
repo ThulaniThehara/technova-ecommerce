@@ -1,4 +1,5 @@
 import { Prisma } from "../generated/prisma/client";
+import { STATUS_NOTE } from "./constants";
 import { HttpError } from "./errors";
 import { prisma } from "./prisma";
 import { formatOrderNumber } from "./utils";
@@ -67,6 +68,8 @@ export async function createOrder(input: CheckoutInput, userId: string) {
           address: input.address,
           city: input.city,
           notes: input.notes || null,
+          // First entry of the tracking timeline.
+          statusHistory: { create: { status: "PENDING", note: STATUS_NOTE.PENDING } },
           total,
           paymentMethod: input.paymentMethod,
           items: {
@@ -101,12 +104,16 @@ type Tx = Prisma.TransactionClient;
 export async function cancelOrderAndRestoreStock(
   tx: Tx,
   where: { id: string } | { orderNumber: number },
+  note: string = STATUS_NOTE.CANCELLED,
 ): Promise<boolean> {
   const flipped = await tx.order.updateMany({
     where: { ...where, orderStatus: { not: "CANCELLED" } },
     data: { orderStatus: "CANCELLED" },
   });
   if (flipped.count === 0) return false;
+
+  const order = await tx.order.findFirstOrThrow({ where, select: { id: true } });
+  await tx.orderStatusHistory.create({ data: { orderId: order.id, status: "CANCELLED", note } });
 
   const items = await tx.orderItem.findMany({ where: { order: where } });
   for (const item of items) {
@@ -137,17 +144,24 @@ export async function settlePayHereOrder(
       if (payment.count === 0) return "already-settled";
 
       if (outcome === "PAID") {
-        // Only a still-PENDING order moves to PROCESSING. If an admin already cancelled it,
+        // Only a still-PENDING order becomes CONFIRMED. If an admin already cancelled it,
         // it stays CANCELLED (the money then needs a manual refund) rather than being revived
-        // without any stock behind it.
-        await tx.order.updateMany({
+        // without any stock behind it. Payment status and order status are separate: PAID
+        // describes the money, CONFIRMED describes where the order is in fulfilment.
+        const confirmed = await tx.order.updateMany({
           where: { orderNumber, orderStatus: "PENDING" },
-          data: { orderStatus: "PROCESSING" },
+          data: { orderStatus: "CONFIRMED" },
         });
+        if (confirmed.count > 0) {
+          const order = await tx.order.findUniqueOrThrow({ where: { orderNumber }, select: { id: true } });
+          await tx.orderStatusHistory.create({
+            data: { orderId: order.id, status: "CONFIRMED", note: "Payment received and order confirmed" },
+          });
+        }
       } else {
         // Stock policy: stock was taken when the order was created, so a failed payment
         // cancels the order and gives it back (a no-op if an admin already did).
-        await cancelOrderAndRestoreStock(tx, { orderNumber });
+        await cancelOrderAndRestoreStock(tx, { orderNumber }, "Payment was not completed");
       }
       return "applied";
     },

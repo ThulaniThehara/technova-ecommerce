@@ -26,7 +26,9 @@ These are throw-away demo values for evaluation. The password is stored only as 
 - **Customer accounts** (sign up / sign in), required only at checkout. Signing in sends you straight back to checkout with your cart intact
 - **A saved cart that follows you across devices**: add items on a laptop, sign in on your phone and the same cart is there
 - Checkout with two options: **PayHere Sandbox** online payment, or **Order via WhatsApp**. The form is prefilled from your account
-- **My Account / My Orders**: profile (name, phone), order history with a status filter, and order detail pages
+- **My Account** with separate tabs: Overview (counts and recent orders), **My Orders**, Profile and Logout
+- **My Orders and order tracking**: status filter, order-number search, a table on desktop and cards on mobile, and a **Track Your Order** timeline (Placed, Confirmed, Processing, Shipped, Delivered) built from real status history. Cancelled orders show a separate cancelled state
+- A refreshed sign-in / sign-up design with a brand panel on large screens (no social login)
 - Order confirmation page whose payment status is read from the database, never from the browser
 - Animated 3D hero (React Three Fiber) with a static-image fallback when WebGL is unavailable
 - Fully responsive; verified with no horizontal overflow at 375, 768 and 1440 px
@@ -123,13 +125,14 @@ User     1 ──── 1 Cart 1 ──── * CartItem * ──── 1 Produc
 | `Cart` / `CartItem` | one saved cart per customer; only product ids and quantities (names, prices and stock are always read fresh) |
 | `OrderItem` | `productId`, **`productName` and `unitPrice` snapshots**, `quantity` |
 
-Enums: `Role` (ADMIN, CUSTOMER), `PaymentMethod` (PAYHERE, WHATSAPP), `PaymentStatus` (PENDING, PAID, FAILED), `OrderStatus` (PENDING, PROCESSING, SHIPPED, COMPLETED, CANCELLED).
+Enums: `Role` (ADMIN, CUSTOMER), `PaymentMethod` (PAYHERE, WHATSAPP), `PaymentStatus` (PENDING, PAID, FAILED), `OrderStatus` (PENDING, CONFIRMED, PROCESSING, SHIPPED, COMPLETED, CANCELLED). `COMPLETED` is shown to customers as "Delivered". A new `OrderStatusHistory` table (status, note, time) stores the tracking timeline.
 
 Key decisions:
 - **Money is `Decimal(10,2)`**, never floating point. PayHere amounts are formatted to exactly two decimals.
 - **Order lines snapshot the product name and price**, so history stays correct if a product is later renamed or repriced.
 - **Order numbers are an auto-increment integer** shown as `TN-0001`.
 - **Payment status and order status are separate**: a paid order can still be awaiting fulfilment.
+- **Order tracking**: every status change writes a row to `OrderStatusHistory`, and the customer's "Track Your Order" timeline (My Orders, then the order) is read from it, so every date shown really happened. Admins move an order forward only (Pending, Confirmed, Processing, Shipped, Delivered) or cancel it before delivery; cancelling returns the stock. `PATCH /api/admin/orders/[id]/status` is admin-only. A customer only ever sees their own orders (another customer's order id returns 404).
 - **Orders also snapshot the customer details** (name, email, phone, address), so changing a profile later never rewrites old orders. `Order.userId` records the owner.
 - **Deletes are restricted**: a product that appears on any order cannot be deleted, only deactivated (`isActive = false` hides it from the store). A category with products cannot be deleted.
 
@@ -171,7 +174,7 @@ Related rules: a cancelled order is final (it cannot be re-opened, because that 
    - `md5sig` equals `md5(merchant_id + order_id + payhere_amount + payhere_currency + status_code + md5(secret))` (compared in constant time)
    - the order exists and the paid **amount and currency equal the order total**
    - the order's payment is still `PENDING`
-4. On `status_code 2` the order becomes `PAID` / `PROCESSING`. On `-1` or `-2` it becomes `FAILED` / `CANCELLED` and the stock is restored. Other codes change nothing.
+4. On `status_code 2` the order becomes `PAID` / `CONFIRMED`. On `-1` or `-2` it becomes `FAILED` / `CANCELLED` and the stock is restored. Other codes change nothing.
 5. The handler always answers `200`. A conditional update on `paymentStatus = PENDING` makes it **idempotent**: a repeated notification changes nothing.
 6. The return page polls `GET /api/orders/:id/status` and shows what the database says. It never trusts the redirect.
 
@@ -216,6 +219,7 @@ The secret never leaves the server (no `NEXT_PUBLIC_` prefix). The notify URL mu
 | GET, PATCH, DELETE | `/api/admin/products/:id` | Admin |
 | GET | `/api/admin/orders?status=` | Admin |
 | GET, PATCH | `/api/admin/orders/:id` | Admin |
+| PATCH | `/api/admin/orders/:id/status` | Admin (`{ "status": "SHIPPED" }`, forward-only, writes the tracking history) |
 
 ## Manual test checklist
 
@@ -227,6 +231,8 @@ Run on the live site in a private window.
 - [ ] Create an account: you land back on checkout with the cart and the form prefilled
 - [ ] Sign in on a second device or browser: the same cart appears
 - [ ] After ordering, My Orders shows the order; another customer cannot open it
+- [ ] In the admin panel move the order Confirmed, Processing, Shipped, Delivered: after each change the customer's Track Your Order timeline updates on reload
+- [ ] Cancel an order: the customer sees the cancelled state and the stock returns
 - [ ] Checkout with invalid data shows field errors; an out-of-stock item is rejected
 - [ ] WhatsApp order: the message is readable, the order is in the database and stock went down
 - [ ] PayHere order: after paying with the sandbox card the order becomes **Paid** through the notification

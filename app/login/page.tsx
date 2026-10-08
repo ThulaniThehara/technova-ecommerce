@@ -16,7 +16,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <AuthShell
       mode="login"
-      title="Login"
+      title="Welcome back"
+      subtitle="Sign in to your TechNova account."
       notice={
         fromCheckout ? (
           <>

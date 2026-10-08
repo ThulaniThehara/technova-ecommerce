@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import OrdersTable from "@/components/admin/OrdersTable";
 import { listAdminOrders, parseStatusFilter } from "@/lib/admin-orders";
-import { ORDER_STATUSES } from "@/lib/constants";
+import { ORDER_STATUSES, statusLabel } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +35,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
         </Link>
         {ORDER_STATUSES.map((s) => (
           <Link key={s} href={`/admin/orders?status=${s}`} className={chip(status === s)}>
-            {s.charAt(0) + s.slice(1).toLowerCase()} ({counts.get(s) ?? 0})
+            {statusLabel(s)} ({counts.get(s) ?? 0})
           </Link>
         ))}
       </div>

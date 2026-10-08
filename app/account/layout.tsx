@@ -12,11 +12,13 @@ export default async function AccountLayout({ children }: { children: React.Reac
   if (!customer) redirect("/login?redirect=/account");
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold text-ink-900 sm:text-4xl">Welcome, {customer.name.split(" ")[0]}</h1>
+    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <h1 className="text-3xl font-bold text-ink-900 sm:text-4xl">My Account</h1>
       <p className="mt-1.5 text-[15px] text-slate-600">{customer.email}</p>
-      <AccountNav />
-      <div className="mt-8">{children}</div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
+        <AccountNav />
+        <div className="min-w-0">{children}</div>
+      </div>
     </div>
   );
 }

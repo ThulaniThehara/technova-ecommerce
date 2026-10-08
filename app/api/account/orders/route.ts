@@ -5,13 +5,15 @@ import { requireCustomer } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/account/orders?status=PENDING - only the signed-in customer's own orders
+// GET /api/account/orders?status=PENDING&q=TN-0007 - only the signed-in customer's own orders
 export async function GET(request: Request) {
   try {
     const { customer, response } = await requireCustomer();
     if (response) return response;
-    const status = parseStatusFilter(new URL(request.url).searchParams.get("status"));
-    return ok(await listCustomerOrders(customer.id, status));
+    const params = new URL(request.url).searchParams;
+    const status = parseStatusFilter(params.get("status"));
+    const q = params.get("q")?.trim().slice(0, 30) || undefined;
+    return ok(await listCustomerOrders(customer.id, status, q));
   } catch (error) {
     return handleError(error, "GET /api/account/orders");
   }

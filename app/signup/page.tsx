@@ -16,7 +16,8 @@ export default async function SignupPage({ searchParams }: PageProps<"/signup">)
   return (
     <AuthShell
       mode="signup"
-      title="Sign Up"
+      title="Create your account"
+      subtitle="Track your orders and check out faster."
       notice={
         fromCheckout ? (
           <p className="font-semibold">Create an account to continue to checkout. Your cart is saved.</p>

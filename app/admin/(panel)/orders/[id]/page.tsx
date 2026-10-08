@@ -66,6 +66,19 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
           </section>
 
           <section className={`${card} p-6`}>
+            <h2 className="text-lg font-bold text-ink-900">Status history</h2>
+            <ol className="mt-4 space-y-3 text-sm">
+              {[...order.history].reverse().map((h, n) => (
+                <li key={n} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <StatusPill status={h.status} />
+                  <span className="text-slate-600">{h.note}</span>
+                  <span className="text-xs text-slate-400">{formatDateTime(h.createdAt)}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section className={`${card} p-6`}>
             <h2 className="text-lg font-bold text-ink-900">Customer & delivery</h2>
             <dl className="mt-4 grid gap-5 text-sm sm:grid-cols-2">
               <div>

@@ -1,5 +1,5 @@
 import type { OrderStatus } from "../generated/prisma/client";
-import { ORDER_STATUSES } from "./constants";
+import { allowedNextStatuses, ORDER_STATUSES, STATUS_NOTE, statusLabel } from "./constants";
 import { HttpError } from "./errors";
 import { cancelOrderAndRestoreStock, serializeOrder } from "./orders";
 import { prisma } from "./prisma";
@@ -19,8 +19,20 @@ export async function listAdminOrders(status?: OrderStatus, take = 200) {
 }
 
 export async function getAdminOrder(id: string) {
-  const row = await prisma.order.findUnique({ where: { id }, include: { items: true } });
-  return row ? serializeOrder(row) : null;
+  const row = await prisma.order.findUnique({
+    where: { id },
+    include: { items: true, statusHistory: { orderBy: { createdAt: "asc" } } },
+  });
+  return row
+    ? {
+        ...serializeOrder(row),
+        history: row.statusHistory.map((h) => ({
+          status: h.status,
+          note: h.note,
+          createdAt: h.createdAt.toISOString(),
+        })),
+      }
+    : null;
 }
 
 /**
@@ -28,9 +40,9 @@ export async function getAdminOrder(id: string) {
  * restore either both happen or neither does.
  *
  * Rules:
- *  - A cancelled order is final. Re-opening it would need stock re-taken, which could
- *    oversell, so it is refused.
- *  - A completed order cannot be cancelled (it has been delivered).
+ *  - Status moves forward only (see allowedNextStatuses) and every change is written to the
+ *    order's tracking history. A cancelled order is final: re-opening it would need stock
+ *    re-taken, which could oversell. A delivered order cannot be cancelled.
  *  - Cancelling goes through cancelOrderAndRestoreStock, the same idempotent function the
  *    PayHere failure path uses, so stock comes back exactly once.
  *  - Payment status is only editable for WhatsApp orders (paid outside the site). PayHere
@@ -62,21 +74,27 @@ export async function updateAdminOrder(
       }
 
       if (nextStatus && nextStatus !== order.orderStatus) {
-        if (order.orderStatus === "CANCELLED") {
-          throw new HttpError("A cancelled order cannot be re-opened. Ask the customer to place a new order.", 409);
+        // Same status = nothing to do (no duplicate timeline entry). Otherwise it must be a
+        // valid move: forward only, or cancel before delivery.
+        if (!allowedNextStatuses(order.orderStatus).includes(nextStatus)) {
+          throw new HttpError(
+            order.orderStatus === "CANCELLED"
+              ? "A cancelled order cannot be re-opened. Ask the customer to place a new order."
+              : `An order that is ${statusLabel(order.orderStatus)} cannot be moved to ${statusLabel(nextStatus)}.`,
+            409,
+          );
         }
         if (nextStatus === "CANCELLED") {
-          if (order.orderStatus === "COMPLETED") {
-            throw new HttpError("A completed order cannot be cancelled.", 409);
-          }
-          await cancelOrderAndRestoreStock(tx, { id });
+          await cancelOrderAndRestoreStock(tx, { id }, "Cancelled by administrator");
         } else {
-          // Conditional on not being cancelled, so a concurrent cancel can never be undone.
+          // Conditional on the status we just read, so two admins (or a concurrent cancel)
+          // can never overwrite each other.
           const moved = await tx.order.updateMany({
-            where: { id, orderStatus: { not: "CANCELLED" } },
+            where: { id, orderStatus: order.orderStatus },
             data: { orderStatus: nextStatus },
           });
-          if (moved.count === 0) throw new HttpError("This order was just cancelled and can no longer be changed.", 409);
+          if (moved.count === 0) throw new HttpError("This order was just changed by someone else. Please reload.", 409);
+          await tx.orderStatusHistory.create({ data: { orderId: id, status: nextStatus, note: STATUS_NOTE[nextStatus] } });
         }
       }
     },

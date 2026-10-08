@@ -85,6 +85,8 @@ export const productPatchSchema = productSchema
 
 // ───────────── Admin: orders ─────────────
 
+export const orderStatusSchema = z.object({ status: z.enum(ORDER_STATUSES) }).strict();
+
 export const orderPatchSchema = z
   .object({
     orderStatus: z.enum(ORDER_STATUSES).optional(),

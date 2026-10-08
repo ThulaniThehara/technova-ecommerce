@@ -34,9 +34,11 @@ enum PaymentStatus {
 
 // Stock policy: stock is decremented when the order is CREATED (inside a transaction)
 // and restored when the order becomes CANCELLED or its payment becomes FAILED.
-// Fulfilment lifecycle: PENDING -> PROCESSING -> SHIPPED -> COMPLETED, or CANCELLED.
+// Fulfilment lifecycle: PENDING -> CONFIRMED -> PROCESSING -> SHIPPED -> COMPLETED (shown to customers as
+// "Delivered"), or CANCELLED.
 enum OrderStatus {
   PENDING
+  CONFIRMED
   PROCESSING
   SHIPPED
   COMPLETED
@@ -114,6 +116,8 @@ model Order {
   userId           String?
   user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   items            OrderItem[]
+  // The tracking timeline: one row each time the order moves to a new status.
+  statusHistory    OrderStatusHistory[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -138,6 +142,19 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+}
+
+// One row per status change (the first row is written when the order is created). The customer's
+// tracking timeline is read from here, so every date shown is a real event, never a guess.
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
 }
 
 // ───────────── Server-side cart (so a cart follows the customer across devices) ─────────────

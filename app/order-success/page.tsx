@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import PaymentStatusPoller from "@/components/checkout/PaymentStatusPoller";
 import { getCustomer } from "@/lib/auth";
+import { statusLabel } from "@/lib/constants";
 import { serializeOrder } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
 import { btnDark, btnOutline, card } from "@/lib/ui";
@@ -112,7 +113,7 @@ export default async function OrderSuccessPage({ searchParams }: PageProps<"/ord
           </div>
           <div>
             <dt className="text-sm text-slate-500">Order status</dt>
-            <dd className="mt-1 text-sm font-medium text-ink-900">{label(order.orderStatus)}</dd>
+            <dd className="mt-1 text-sm font-medium text-ink-900">{order.orderStatus === "PENDING" ? "Order Placed" : statusLabel(order.orderStatus)}</dd>
           </div>
         </dl>
 
@@ -154,12 +155,18 @@ export default async function OrderSuccessPage({ searchParams }: PageProps<"/ord
         </div>
       )}
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <Link href="/" className={`${btnDark} px-8 py-3.5 text-base`}>
-          Continue Shopping
+      {!failed && (
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Your order has been placed successfully. You can track its progress from My Orders.
+        </p>
+      )}
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <Link href={`/account/orders/${order.id}#tracking`} className={`${btnDark} px-8 py-3.5 text-base`}>
+          Track Order
         </Link>
         <Link href="/products" className={`${btnOutline} px-8 py-3.5 text-base`}>
-          View Products
+          Continue Shopping
         </Link>
       </div>
     </div>

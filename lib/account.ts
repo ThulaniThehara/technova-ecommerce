@@ -6,12 +6,25 @@ import type { ProfileInput } from "./validations";
 // Every query here is scoped by `userId`, which always comes from the verified session.
 // An order that belongs to someone else is not "forbidden", it simply isn't found.
 
-export async function listCustomerOrders(userId: string, status?: OrderStatus) {
+// "TN-0007", "tn0007" and "7" all find order 7. Anything without digits matches nothing.
+function orderNumberFromQuery(q: string): number | null {
+  const digits = q.replace(/\D/g, "");
+  if (!digits || digits.length > 9) return null;
+  return Number(digits);
+}
+
+export async function listCustomerOrders(userId: string, status?: OrderStatus, search?: string, take = 200) {
+  const number = search ? orderNumberFromQuery(search) : undefined;
+  if (search && number === null) return [];
   const rows = await prisma.order.findMany({
-    where: { userId, ...(status ? { orderStatus: status } : {}) },
+    where: {
+      userId,
+      ...(status ? { orderStatus: status } : {}),
+      ...(number != null ? { orderNumber: number } : {}),
+    },
     include: { items: true },
     orderBy: { createdAt: "desc" },
-    take: 200,
+    take,
   });
   return rows.map(serializeOrder);
 }
@@ -19,11 +32,16 @@ export async function listCustomerOrders(userId: string, status?: OrderStatus) {
 export async function getCustomerOrder(userId: string, id: string) {
   const row = await prisma.order.findFirst({
     where: { id, userId },
-    include: { items: { include: { product: { select: { imageUrl: true, slug: true, isActive: true } } } } },
+    include: {
+      items: { include: { product: { select: { imageUrl: true, slug: true, isActive: true } } } },
+      statusHistory: { orderBy: { createdAt: "asc" } },
+    },
   });
   if (!row) return null;
   return {
     ...serializeOrder(row),
+    // The real timeline: one entry per status change, with the time it actually happened.
+    history: row.statusHistory.map((h) => ({ status: h.status, note: h.note, createdAt: h.createdAt.toISOString() })),
     items: row.items.map((i) => ({
       productName: i.productName,
       unitPrice: i.unitPrice.toFixed(2),
@@ -41,7 +59,7 @@ export type CustomerOrderDetail = NonNullable<Awaited<ReturnType<typeof getCusto
 export async function getCustomerSummary(userId: string) {
   const [total, pending, completed] = await Promise.all([
     prisma.order.count({ where: { userId } }),
-    prisma.order.count({ where: { userId, orderStatus: { in: ["PENDING", "PROCESSING", "SHIPPED"] } } }),
+    prisma.order.count({ where: { userId, orderStatus: { in: ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED"] } } }),
     prisma.order.count({ where: { userId, orderStatus: "COMPLETED" } }),
   ]);
   return { total, pending, completed };

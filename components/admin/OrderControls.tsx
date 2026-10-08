@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ORDER_STATUSES } from "@/lib/constants";
+import { allowedNextStatuses, statusLabel } from "@/lib/constants";
 import { btnDark, card, input, label } from "@/lib/ui";
 
 type Props = {
@@ -14,7 +14,7 @@ type Props = {
   paymentMethod: "PAYHERE" | "WHATSAPP";
 };
 
-const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
+const titleCase = (s: string) => (s === "PENDING" || s === "PAID" ? s.charAt(0) + s.slice(1).toLowerCase() : statusLabel(s));
 
 export default function OrderControls({ orderId, orderStatus, paymentStatus, paymentMethod }: Props) {
   const router = useRouter();
@@ -23,6 +23,9 @@ export default function OrderControls({ orderId, orderStatus, paymentStatus, pay
   const [busy, setBusy] = useState<"status" | "payment" | null>(null);
 
   const cancelled = orderStatus === "CANCELLED";
+  // Final states (cancelled, delivered) have nothing left to change.
+  const options = allowedNextStatuses(orderStatus);
+  const finished = options.length === 0;
 
   async function save(kind: "status" | "payment") {
     if (kind === "status" && status === "CANCELLED") {
@@ -58,7 +61,11 @@ export default function OrderControls({ orderId, orderStatus, paymentStatus, pay
       <div>
         <h2 className="text-lg font-bold text-ink-900">Update order</h2>
         <p className="mt-1 text-sm text-slate-500">
-          {cancelled ? "This order is cancelled and can no longer be changed." : "Move the order through fulfilment."}
+          {cancelled
+            ? "This order is cancelled and can no longer be changed."
+            : finished
+              ? "This order has been delivered."
+              : "Move the order forward. The customer sees every change on their tracking page."}
         </p>
       </div>
 
@@ -68,18 +75,19 @@ export default function OrderControls({ orderId, orderStatus, paymentStatus, pay
           <select
             id="orderStatus"
             value={status}
-            disabled={cancelled || busy !== null}
+            disabled={finished || busy !== null}
             onChange={(e) => setStatus(e.target.value)}
             className={`${input} flex-1`}
           >
-            {ORDER_STATUSES.map((s) => (
+            <option value={orderStatus}>{titleCase(orderStatus)} (current)</option>
+            {options.map((s) => (
               <option key={s} value={s}>{titleCase(s)}</option>
             ))}
           </select>
           <button
             type="button"
             onClick={() => save("status")}
-            disabled={cancelled || busy !== null || status === orderStatus}
+            disabled={finished || busy !== null || status === orderStatus}
             className={`${btnDark} px-5`}
           >
             {busy === "status" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

@@ -22,20 +22,20 @@ const categories = [
 
 // price in LKR; category refers to the slug above
 const products = [
-  { name: "Galaxy S25 256GB", category: "smartphones", price: "329000.00", stock: 15, description: "6.2-inch Dynamic AMOLED display, flagship camera system and all-day battery in a compact body." },
-  { name: "iPhone 16 128GB", category: "smartphones", price: "349000.00", stock: 12, description: "A18 chip, 48MP Fusion camera and a bright Super Retina XDR display." },
-  { name: "Pixel 9a", category: "smartphones", price: "199000.00", stock: 20, description: "Clean Android experience with a great camera and seven years of updates." },
-  { name: "Redmi Note 14 Pro", category: "smartphones", price: "104500.00", stock: 30, description: "200MP camera, 120Hz AMOLED screen and fast charging at a friendly price." },
-  { name: "MacBook Air 13 M3", category: "laptops", price: "429000.00", stock: 8, description: "Fanless, ultra-light laptop with the M3 chip and up to 18 hours of battery life." },
-  { name: "Dell XPS 14", category: "laptops", price: "489000.00", stock: 6, description: "14-inch OLED display, Intel Core Ultra processor and premium aluminium build." },
-  { name: "ASUS TUF Gaming F15", category: "laptops", price: "329500.00", stock: 10, description: "RTX graphics, 144Hz display and military-grade durability for gaming and creation." },
-  { name: "Lenovo IdeaPad Slim 3", category: "laptops", price: "174900.00", stock: 18, description: "Everyday laptop with a Ryzen 5 processor, 16GB RAM and 512GB SSD." },
-  { name: "Apple Watch Series 10", category: "smart-devices", price: "139000.00", stock: 14, description: "Larger always-on display, fitness tracking and ECG in a thin, comfortable design." },
-  { name: "Echo Dot (5th Gen)", category: "smart-devices", price: "19900.00", stock: 40, description: "Compact smart speaker with Alexa, improved bass and smart-home control." },
-  { name: "Xiaomi Smart Band 9", category: "smart-devices", price: "15900.00", stock: 50, description: "AMOLED fitness band with heart-rate, sleep tracking and 21-day battery life." },
-  { name: "AirPods Pro 2", category: "accessories", price: "84900.00", stock: 25, description: "Active noise cancellation, adaptive transparency and USB-C charging case." },
-  { name: "Anker 65W GaN Charger", category: "accessories", price: "12900.00", stock: 60, description: "Compact 3-port fast charger for laptops, phones and tablets." },
-  { name: "Logitech MX Master 3S", category: "accessories", price: "36900.00", stock: 0, description: "Ergonomic wireless mouse with silent clicks and precise 8K DPI tracking. (Seeded out of stock to demo stock handling.)" },
+  { name: "Galaxy S25 256GB", category: "smartphones", price: "329000.00", stock: 15, description: "A fast Samsung phone with a bright screen and a great camera. Comes in black." },
+  { name: "iPhone 16 128GB", category: "smartphones", price: "349000.00", stock: 12, description: "A smooth Apple iPhone with a sharp camera and long battery life. Available in white." },
+  { name: "Pixel 9a", category: "smartphones", price: "199000.00", stock: 20, description: "A simple Google phone with a clean look and a very good camera. Comes in grey." },
+  { name: "Redmi Note 14 Pro", category: "smartphones", price: "104500.00", stock: 30, description: "A budget-friendly phone with a big screen and fast charging. Available in blue." },
+  { name: "MacBook Air 13 M3", category: "laptops", price: "429000.00", stock: 8, description: "A thin and light Apple laptop that is quick and lasts all day. Comes in silver." },
+  { name: "Dell XPS 14", category: "laptops", price: "489000.00", stock: 6, description: "A stylish Dell laptop with a sharp screen, good for work and study." },
+  { name: "ASUS TUF Gaming F15", category: "laptops", price: "329500.00", stock: 10, description: "A strong gaming laptop that runs games and heavy apps smoothly." },
+  { name: "Lenovo IdeaPad Slim 3", category: "laptops", price: "174900.00", stock: 18, description: "A reliable everyday laptop for school, office work and browsing. Comes in grey." },
+  { name: "Apple Watch Series 10", category: "smart-devices", price: "139000.00", stock: 14, description: "A smartwatch that tracks your steps, health and workouts. Available in black." },
+  { name: "Echo Dot (5th Gen)", category: "smart-devices", price: "19900.00", stock: 40, description: "A small smart speaker you can control with your voice. Comes in white." },
+  { name: "Xiaomi Smart Band 9", category: "smart-devices", price: "15900.00", stock: 50, description: "A light fitness band that tracks your steps and sleep. Available in black." },
+  { name: "AirPods Pro 2", category: "accessories", price: "84900.00", stock: 25, description: "Wireless earbuds with clear sound and noise cancelling. Comes in white." },
+  { name: "Anker 65W GaN Charger", category: "accessories", price: "12900.00", stock: 60, description: "A small, fast charger for your phone and laptop. Comes in black." },
+  { name: "Logitech MX Master 3S", category: "accessories", price: "36900.00", stock: 0, description: "A comfortable wireless mouse for work and everyday use. Available in graphite." },
 ];
 
 async function main() {

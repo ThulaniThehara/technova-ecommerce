@@ -14,6 +14,13 @@ type Props = {
 };
 
 type Values = { name: string; email: string; phone: string; password: string; confirmPassword: string };
+const labels: Record<keyof Values, string> = {
+  name: "Full name",
+  email: "Email address",
+  phone: "Phone number",
+  password: "Password",
+  confirmPassword: "Confirm password",
+};
 const empty: Values = { name: "", email: "", phone: "", password: "", confirmPassword: "" };
 
 export default function CustomerAuthForm({ mode, redirectTo }: Props) {
@@ -83,11 +90,14 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
     const hasError = !!errors[key];
     return (
       <div className="group relative">
+        <label htmlFor={key} className="mb-1.5 block text-sm font-semibold text-ink-900">
+          {labels[key]}
+        </label>
         <div
-          className={`flex items-center gap-3 border-b-2 py-2.5 transition-colors ${
+          className={`flex items-center gap-3 rounded-xl border bg-white px-3.5 py-3 transition ${
             hasError
-              ? "border-red-500"
-              : "border-slate-200 focus-within:border-brand-600 hover:border-slate-300"
+              ? "border-red-400 focus-within:ring-4 focus-within:ring-red-100"
+              : "border-line hover:border-slate-300 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100"
           }`}
         >
           <span
@@ -105,7 +115,7 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
             placeholder={placeholder}
             aria-invalid={hasError}
             aria-describedby={hasError ? `${key}-error` : undefined}
-            className="w-full bg-transparent text-[15px] font-medium text-ink-900 placeholder:text-slate-400 outline-none"
+            className="w-full bg-transparent text-[15px] text-ink-900 placeholder:text-slate-400 outline-none"
             {...props}
           />
         </div>
@@ -134,11 +144,14 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
     const hasError = !!errors[key];
     return (
       <div className="group relative">
+        <label htmlFor={key} className="mb-1.5 block text-sm font-semibold text-ink-900">
+          {labels[key]}
+        </label>
         <div
-          className={`flex items-center gap-3 border-b-2 py-2.5 transition-colors ${
+          className={`flex items-center gap-3 rounded-xl border bg-white px-3.5 py-3 transition ${
             hasError
-              ? "border-red-500"
-              : "border-slate-200 focus-within:border-brand-600 hover:border-slate-300"
+              ? "border-red-400 focus-within:ring-4 focus-within:ring-red-100"
+              : "border-line hover:border-slate-300 focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-100"
           }`}
         >
           <span
@@ -158,7 +171,7 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
             placeholder={placeholder}
             aria-invalid={hasError}
             aria-describedby={hasError ? `${key}-error` : undefined}
-            className="w-full bg-transparent pr-2 text-[15px] font-medium text-ink-900 placeholder:text-slate-400 outline-none"
+            className="w-full bg-transparent pr-2 text-[15px] text-ink-900 placeholder:text-slate-400 outline-none"
           />
           <button
             type="button"
@@ -196,13 +209,13 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
             {renderInputField({
               key: "name",
               icon: <User className="h-5 w-5" />,
-              placeholder: "Full Name",
+              placeholder: "e.g. Ashan Perera",
               props: { autoComplete: "name", maxLength: 100 },
             })}
             {renderInputField({
               key: "phone",
               icon: <Phone className="h-5 w-5" />,
-              placeholder: "Phone Number",
+              placeholder: "07X XXX XXXX",
               props: { type: "tel", autoComplete: "tel", inputMode: "tel", maxLength: 12 },
             })}
           </div>
@@ -210,7 +223,7 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
           {renderInputField({
             key: "email",
             icon: <Mail className="h-5 w-5" />,
-            placeholder: "Email ID",
+            placeholder: "you@example.com",
             props: {
               type: "email",
               autoComplete: "email",
@@ -222,14 +235,14 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             {renderPasswordField({
               key: "password",
-              placeholder: "Password",
+              placeholder: "At least 8 characters",
               autoComplete: "new-password",
               show: showPassword,
               toggleShow: () => setShowPassword((v) => !v),
             })}
             {renderPasswordField({
               key: "confirmPassword",
-              placeholder: "Confirm Password",
+              placeholder: "Re-enter your password",
               autoComplete: "new-password",
               show: showConfirmPassword,
               toggleShow: () => setShowConfirmPassword((v) => !v),
@@ -241,7 +254,7 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
           {renderInputField({
             key: "email",
             icon: <Mail className="h-5 w-5" />,
-            placeholder: "Email ID",
+            placeholder: "you@example.com",
             props: {
               type: "email",
               autoComplete: "username",
@@ -252,7 +265,7 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
 
           {renderPasswordField({
             key: "password",
-            placeholder: "Password",
+            placeholder: "Enter your password",
             autoComplete: "current-password",
             show: showPassword,
             toggleShow: () => setShowPassword((v) => !v),
@@ -303,59 +316,19 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
               ? "Creating account..."
               : "Signing in..."
             : signup
-              ? "Submit"
-              : "Login"}
+              ? "Create account"
+              : "Sign in"}
         </button>
       </div>
 
-      {/* Social login for Login mode */}
-      {!signup && (
-        <>
-          <div className="relative my-3 flex items-center justify-center">
-            <div className="w-full border-t border-slate-200" />
-            <span className="absolute bg-white px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              OR
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() =>
-              toast.info("Google Sign-In will be available soon. Please use your email and password.")
-            }
-            className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-surface/50 py-3 text-sm font-semibold text-ink-800 transition hover:border-slate-300 hover:bg-surface active:scale-[0.99]"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden>
-              <path
-                fill="#4285F4"
-                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-              />
-            </svg>
-            Login with Google
-          </button>
-        </>
-      )}
-
       {/* Bottom Switcher */}
       <p className="pt-2 text-center text-xs text-slate-500">
-        {signup ? "Joined us before? " : "Don't have account then "}
+        {signup ? "Already have an account? " : "New to TechNova? "}
         <Link
           href={switchHref(signup ? "/login" : "/signup")}
           className="font-bold text-brand-600 transition hover:text-brand-700 hover:underline"
         >
-          {signup ? "Login" : "Sign Up"}
+          {signup ? "Sign in" : "Create an account"}
         </Link>
       </p>
     </form>
