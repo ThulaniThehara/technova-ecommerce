@@ -2,7 +2,7 @@
 
 import { ShoppingCart } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { RefObject } from "react";
+import { type RefObject, useState } from "react";
 import type { SceneControls } from "./controls";
 import { SCENE_CONFIG } from "./hero.config";
 
@@ -13,21 +13,28 @@ import { SCENE_CONFIG } from "./hero.config";
  */
 export default function BuyNowButton({ controls }: { controls: RefObject<SceneControls> }) {
   const router = useRouter();
+  const [leaving, setLeaving] = useState(false);
 
   function handleClick() {
+    if (leaving) return; // ignore repeat clicks while the pull-in animation is playing
+    setLeaving(true);
     const c = controls.current;
     if (!c || c.reducedMotion) {
       router.push("/products");
+      window.setTimeout(() => setLeaving(false), 2500);
       return;
     }
     c.triggerPull();
     window.setTimeout(() => router.push("/products"), SCENE_CONFIG.click.navigateAfterMs);
+    // Re-arm shortly after, so the button still works if the user comes back with the Back button.
+    window.setTimeout(() => setLeaving(false), 2500);
   }
 
   return (
     <button
       type="button"
       onClick={handleClick}
+      aria-busy={leaving}
       onPointerEnter={() => controls.current?.setHover(1)}
       onPointerLeave={() => controls.current?.setHover(0)}
       onFocus={() => controls.current?.setHover(1)}

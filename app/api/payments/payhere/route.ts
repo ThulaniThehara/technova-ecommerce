@@ -9,6 +9,7 @@ import {
 } from "@/lib/payhere";
 import { prisma } from "@/lib/prisma";
 import { formatOrderNumber, toPayHereAmount } from "@/lib/utils";
+import { handleError } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ const bodySchema = z.object({ orderId: z.string().min(1) });
  * the hash - is read from the database and computed here, so a tampered browser cannot pay
  * Rs. 1 for a Rs. 300,000 order: the hash would not match the amount PayHere receives.
  */
-export async function POST(request: Request) {
+async function handle(request: Request) {
   let body: unknown;
   try {
     body = await request.json();
@@ -95,4 +96,12 @@ export async function POST(request: Request) {
   };
 
   return NextResponse.json({ success: true, data: { checkoutUrl: PAYHERE_CHECKOUT_URL, fields } });
+}
+
+export async function POST(request: Request) {
+  try {
+    return await handle(request);
+  } catch (error) {
+    return handleError(error, "POST /api/payments/payhere");
+  }
 }

@@ -1,19 +1,14 @@
-import { Headphones, Laptop, ShieldCheck, Smartphone, Truck, Watch, type LucideIcon } from "lucide-react";
+import { Headphones, ShieldCheck, Truck } from "lucide-react";
 import Link from "next/link";
 import HeroSection from "@/components/hero/HeroSection";
 import ProductCard from "@/components/products/ProductCard";
+import { categoryIcons, fallbackCategoryIcon } from "@/lib/category-icons";
 import { getCategories, getFeaturedProducts } from "@/lib/products";
 import { btnPrimary, sectionTitle } from "@/lib/ui";
 
 // Stock and prices change in the admin panel, so never prerender this page at build time.
 export const dynamic = "force-dynamic";
 
-const categoryIcons: Record<string, LucideIcon> = {
-  smartphones: Smartphone,
-  laptops: Laptop,
-  "smart-devices": Watch,
-  accessories: Headphones,
-};
 
 const perks = [
   { icon: ShieldCheck, title: "Genuine Products", text: "100% authentic with manufacturer warranty." },
@@ -28,14 +23,14 @@ export default async function Home() {
   return (
     <>
       {/* Hero: text + animated 3D electronics showcase (tune it in components/hero/hero.config.ts) */}
-      <HeroSection />
+      <HeroSection categories={categories.map((c) => ({ id: c.id, name: c.name, slug: c.slug, count: c._count.products }))} />
 
       <div className="mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         {/* Categories */}
         <h2 className={sectionTitle}>Shop by category</h2>
         <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {categories.map((c) => {
-            const Icon = categoryIcons[c.slug] ?? Headphones;
+            const Icon = categoryIcons[c.slug] ?? fallbackCategoryIcon;
             return (
               <Link
                 key={c.id}

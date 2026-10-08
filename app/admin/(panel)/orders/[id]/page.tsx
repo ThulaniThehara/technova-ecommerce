@@ -33,7 +33,8 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+        {/* min-w-0: lets this grid column shrink below the table's min width, so the table scrolls instead of widening the page */}
+        <div className="min-w-0 space-y-6 lg:col-span-2">
           <section className={`${card} overflow-x-auto`}>
             <h2 className="px-6 pt-6 text-lg font-bold text-ink-900">Items</h2>
             <table className="mt-4 w-full min-w-[480px] text-left text-sm">

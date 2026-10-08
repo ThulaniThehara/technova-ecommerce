@@ -28,7 +28,16 @@ export async function getAdmin(): Promise<Admin | null> {
 export async function requireAdmin(): Promise<
   { admin: Admin; response?: never } | { admin?: never; response: NextResponse }
 > {
-  const admin = await getAdmin();
+  let admin: Admin | null;
+  try {
+    admin = await getAdmin();
+  } catch (error) {
+    // e.g. the database is unreachable. Fail closed (no access) with a clean JSON body.
+    console.error("requireAdmin could not verify the session", error);
+    return {
+      response: NextResponse.json({ success: false, message: "Could not verify your session. Please try again." }, { status: 503 }),
+    };
+  }
   if (!admin) {
     return { response: NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 }) };
   }

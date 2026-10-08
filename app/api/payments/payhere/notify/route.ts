@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
  * Always responds 200: PayHere retries non-2xx responses, and a replay of a notification we
  * have already rejected (bad signature) or already applied would never succeed on a retry.
  */
-export async function POST(request: Request) {
+async function handle(request: Request) {
   const ok = () => NextResponse.json({ received: true });
 
   let form: FormData;
@@ -117,4 +117,15 @@ export async function POST(request: Request) {
   }
 
   return ok();
+}
+
+// Outer safety net. PayHere must always get a 200 (it retries anything else), and an unexpected
+// error must be logged, never returned.
+export async function POST(request: Request) {
+  try {
+    return await handle(request);
+  } catch (error) {
+    console.error("[payhere/notify] unexpected error", error);
+    return NextResponse.json({ received: true });
+  }
 }

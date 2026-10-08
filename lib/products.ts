@@ -1,4 +1,5 @@
 import type { Prisma } from "../generated/prisma/client";
+import { sortCategories } from "./category-icons";
 import { prisma } from "./prisma";
 
 export type ProductFilters = { q?: string; category?: string };
@@ -47,10 +48,10 @@ export async function getActiveProductByIdOrSlug(idOrSlug: string) {
 }
 
 export async function getCategories() {
-  return prisma.category.findMany({
-    orderBy: { name: "asc" },
+  const categories = await prisma.category.findMany({
     include: { _count: { select: { products: { where: { isActive: true } } } } },
   });
+  return sortCategories(categories);
 }
 
 // Plain JSON shape (Decimal -> string) shared by API responses.

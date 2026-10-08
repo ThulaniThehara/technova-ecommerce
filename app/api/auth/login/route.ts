@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { clearFailures, isLimited, recordFailure } from "@/lib/rate-limit";
 import { SESSION_COOKIE, SESSION_MAX_AGE, signSession } from "@/lib/session";
 import { loginSchema } from "@/lib/validations";
+import { handleError } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ const INVALID = { success: false, message: "Invalid email or password." };
 // "wrong password" and response timing doesn't leak which emails are registered.
 const dummyHash = bcrypt.hash("not-a-real-password", 12);
 
-export async function POST(request: Request) {
+async function handle(request: Request) {
   let body: unknown;
   try {
     body = await request.json();
@@ -60,4 +61,14 @@ export async function POST(request: Request) {
     maxAge: SESSION_MAX_AGE,
   });
   return response;
+}
+
+// Outer safety net: whatever goes wrong inside, the client gets {success, message} and never a
+// stack trace. The real error stays in the server log.
+export async function POST(request: Request) {
+  try {
+    return await handle(request);
+  } catch (error) {
+    return handleError(error, "POST /api/auth/login");
+  }
 }
