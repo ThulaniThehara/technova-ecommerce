@@ -2,12 +2,14 @@
 
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useAuthModal } from "@/components/auth/AuthModal";
 import { clearCart, removeFromCart, setCartQuantity } from "@/lib/cart-store";
 import { btnPrimary, card } from "@/lib/ui";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "./useCart";
 
 export default function CartView() {
+  const { openAuth, signedIn } = useAuthModal();
   const { items, ready, subtotal } = useCart();
 
   if (!ready) {
@@ -101,7 +103,17 @@ export default function CartView() {
             <dd className="font-bold text-ink-900">{formatPrice(subtotal)}</dd>
           </div>
         </dl>
-        <Link href="/checkout" className={`${btnPrimary} mt-6 w-full py-3.5 text-base`}>
+        <Link
+          href="/checkout"
+          onClick={(e) => {
+            // Guests get the sign-in pop-up right here; signed-in customers go straight to checkout.
+            if (!signedIn) {
+              e.preventDefault();
+              openAuth("login", "/checkout");
+            }
+          }}
+          className={`${btnPrimary} mt-6 w-full py-3.5 text-base`}
+        >
           Proceed to Checkout
         </Link>
         <button

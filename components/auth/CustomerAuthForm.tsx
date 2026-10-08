@@ -11,6 +11,8 @@ type Props = {
   mode: "login" | "signup";
   /** Where to go after success. Already validated on the server by safeRedirect(). */
   redirectTo: string;
+  /** When set (pop-up), the sign in / sign up switch stays in place instead of navigating to another page. */
+  onSwitch?: (mode: "login" | "signup") => void;
 };
 
 type Values = { name: string; email: string; phone: string; password: string; confirmPassword: string };
@@ -23,7 +25,7 @@ const labels: Record<keyof Values, string> = {
 };
 const empty: Values = { name: "", email: "", phone: "", password: "", confirmPassword: "" };
 
-export default function CustomerAuthForm({ mode, redirectTo }: Props) {
+export default function CustomerAuthForm({ mode, redirectTo, onSwitch }: Props) {
   const signup = mode === "signup";
   const [values, setValues] = useState<Values>(empty);
   const [errors, setErrors] = useState<SignupFieldErrors>({});
@@ -324,12 +326,22 @@ export default function CustomerAuthForm({ mode, redirectTo }: Props) {
       {/* Bottom Switcher */}
       <p className="pt-2 text-center text-xs text-slate-500">
         {signup ? "Already have an account? " : "New to TechNova? "}
-        <Link
-          href={switchHref(signup ? "/login" : "/signup")}
-          className="font-bold text-brand-600 transition hover:text-brand-700 hover:underline"
-        >
-          {signup ? "Sign in" : "Create an account"}
-        </Link>
+        {onSwitch ? (
+          <button
+            type="button"
+            onClick={() => onSwitch(signup ? "login" : "signup")}
+            className="font-bold text-brand-600 transition hover:text-brand-700 hover:underline"
+          >
+            {signup ? "Sign in" : "Create an account"}
+          </button>
+        ) : (
+          <Link
+            href={switchHref(signup ? "/login" : "/signup")}
+            className="font-bold text-brand-600 transition hover:text-brand-700 hover:underline"
+          >
+            {signup ? "Sign in" : "Create an account"}
+          </Link>
+        )}
       </p>
     </form>
   );

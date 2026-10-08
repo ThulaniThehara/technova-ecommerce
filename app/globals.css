@@ -61,3 +61,10 @@ h3 {
     transparent 1px 9px
   );
 }
+
+/* Text fields draw their own focus style (a ring or a highlighted wrapper), so skip the second, inner outline. */
+input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}

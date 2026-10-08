@@ -3,7 +3,6 @@
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Logo from "@/components/layout/Logo";
 import { btnPrimary, input, label as labelClass } from "@/lib/ui";
 import { loginSchema } from "@/lib/validations";
 
@@ -48,18 +47,14 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="w-full max-w-sm">
-      <Logo href={null} />
-      <h1 className="mt-8 text-3xl font-bold text-ink-900">Admin Login</h1>
-      <p className="mt-2 text-[15px] text-slate-600">Sign in to manage products, inventory and orders.</p>
-
+    <form onSubmit={handleSubmit} noValidate className="w-full">
       {error && (
-        <p role="alert" className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {error}
         </p>
       )}
 
-      <div className="mt-7 space-y-5">
+      <div className={`space-y-5 ${error ? "mt-5" : ""}`}>
         <div>
           <label htmlFor="email" className={labelClass}>Email Address</label>
           <input

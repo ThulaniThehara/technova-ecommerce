@@ -4,6 +4,7 @@ import { Loader2, LogOut, Menu, Package, ShoppingCart, User, X } from "lucide-re
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useAuthModal } from "@/components/auth/AuthModal";
 import { useCart } from "@/components/cart/useCart";
 import { btnPrimary } from "@/lib/ui";
 import AccountMenu, { useSignOut } from "./AccountMenu";
@@ -19,6 +20,7 @@ export default function Navbar({ customer }: { customer: { name: string } | null
   const { count } = useCart();
   const pathname = usePathname();
   const { signOut, pending } = useSignOut();
+  const { openAuth } = useAuthModal();
 
   // The admin panel has its own shell, so the storefront chrome stays out of it.
   if (pathname.startsWith("/admin")) return null;
@@ -68,12 +70,16 @@ export default function Navbar({ customer }: { customer: { name: string } | null
               <AccountMenu name={customer.name} />
             ) : (
               <>
-                <Link href="/login" className="rounded-xl px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-surface">
+                <button
+                  type="button"
+                  onClick={() => openAuth("login")}
+                  className="rounded-xl px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-surface"
+                >
                   Sign In
-                </Link>
-                <Link href="/signup" className={`${btnPrimary} px-4 py-2`}>
+                </button>
+                <button type="button" onClick={() => openAuth("signup")} className={`${btnPrimary} px-4 py-2`}>
                   Create Account
-                </Link>
+                </button>
               </>
             )}
           </div>
@@ -125,12 +131,26 @@ export default function Navbar({ customer }: { customer: { name: string } | null
             </>
           ) : (
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <Link href="/login" onClick={() => setOpen(false)} className="rounded-xl border border-line px-4 py-3 text-center text-sm font-semibold text-ink-700">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  openAuth("login");
+                }}
+                className="rounded-xl border border-line px-4 py-3 text-center text-sm font-semibold text-ink-700"
+              >
                 Sign In
-              </Link>
-              <Link href="/signup" onClick={() => setOpen(false)} className={`${btnPrimary} py-3`}>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  openAuth("signup");
+                }}
+                className={`${btnPrimary} py-3`}
+              >
                 Create Account
-              </Link>
+              </button>
             </div>
           )}
         </nav>
