@@ -24,7 +24,7 @@ export default function HeroSection({ categories }: { categories: HeroCategory[]
         className="pointer-events-none absolute -left-10 top-1/2 hidden h-[300px] w-[300px] -translate-y-1/2 rounded-full border border-brand-200/40 lg:block"
       />
 
-      <div className="relative mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 lg:min-h-[min(90vh,720px)] lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-16">
+      <div className="relative mx-auto grid w-full max-w-7xl items-center gap-10 px-4 pb-12 pt-6 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:pb-16 lg:pt-6">
         <HeroContent categories={categories} />
         <HeroScene />
       </div>

@@ -1,10 +1,12 @@
 "use client";
 
-import { Menu, ShoppingCart, X } from "lucide-react";
+import { Loader2, LogOut, Menu, Package, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useCart } from "@/components/cart/useCart";
+import { btnPrimary } from "@/lib/ui";
+import AccountMenu, { useSignOut } from "./AccountMenu";
 import Logo from "./Logo";
 
 const links = [
@@ -12,13 +14,16 @@ const links = [
   { href: "/products", label: "Products" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ customer }: { customer: { name: string } | null }) {
   const [open, setOpen] = useState(false);
   const { count } = useCart();
   const pathname = usePathname();
+  const { signOut, pending } = useSignOut();
 
   // The admin panel has its own shell, so the storefront chrome stays out of it.
   if (pathname.startsWith("/admin")) return null;
+
+  const mobileItem = "flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-base font-medium text-ink-700 hover:bg-surface";
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
@@ -43,7 +48,7 @@ export default function Navbar() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <Link
             href="/cart"
             className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-ink-700 transition hover:bg-surface"
@@ -56,6 +61,23 @@ export default function Navbar() {
               </span>
             )}
           </Link>
+
+          {/* Desktop auth area */}
+          <div className="hidden items-center gap-1.5 md:flex">
+            {customer ? (
+              <AccountMenu name={customer.name} />
+            ) : (
+              <>
+                <Link href="/login" className="rounded-xl px-3.5 py-2 text-sm font-semibold text-ink-700 transition hover:bg-surface">
+                  Sign In
+                </Link>
+                <Link href="/signup" className={`${btnPrimary} px-4 py-2`}>
+                  Create Account
+                </Link>
+              </>
+            )}
+          </div>
+
           <button
             type="button"
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-ink-700 transition hover:bg-surface md:hidden"
@@ -72,15 +94,45 @@ export default function Navbar() {
       {open && (
         <nav id="mobile-menu" className="border-t border-line bg-white px-4 pb-4 pt-2 md:hidden" aria-label="Mobile">
           {[...links, { href: "/cart", label: `Cart${count > 0 ? ` (${count})` : ""}` }].map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={() => setOpen(false)}
-              className="block rounded-xl px-3 py-3 text-base font-medium text-ink-700 hover:bg-surface"
-            >
+            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className={mobileItem}>
               {l.label}
             </Link>
           ))}
+
+          <div className="my-2 border-t border-line" />
+
+          {customer ? (
+            <>
+              <p className="px-3 pb-1 pt-2 text-xs text-slate-500">Signed in as {customer.name}</p>
+              <Link href="/account" onClick={() => setOpen(false)} className={mobileItem}>
+                <User className="h-4 w-4" aria-hidden /> My Account
+              </Link>
+              <Link href="/account/orders" onClick={() => setOpen(false)} className={mobileItem}>
+                <Package className="h-4 w-4" aria-hidden /> My Orders
+              </Link>
+              <button
+                type="button"
+                onClick={async () => {
+                  await signOut();
+                  setOpen(false);
+                }}
+                disabled={pending}
+                className={`${mobileItem} disabled:opacity-60`}
+              >
+                {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <LogOut className="h-4 w-4" aria-hidden />}
+                Sign out
+              </button>
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <Link href="/login" onClick={() => setOpen(false)} className="rounded-xl border border-line px-4 py-3 text-center text-sm font-semibold text-ink-700">
+                Sign In
+              </Link>
+              <Link href="/signup" onClick={() => setOpen(false)} className={`${btnPrimary} py-3`}>
+                Create Account
+              </Link>
+            </div>
+          )}
         </nav>
       )}
     </header>

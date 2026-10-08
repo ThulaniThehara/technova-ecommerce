@@ -1,9 +1,10 @@
-import { PackageSearch, Search } from "lucide-react";
+import { PackageSearch } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import ProductCard from "@/components/products/ProductCard";
+import LiveSearchInput from "@/components/ui/LiveSearchInput";
 import { getCategories, getProducts } from "@/lib/products";
-import { btnPrimary, input } from "@/lib/ui";
+import { btnPrimary } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Products" };
@@ -34,25 +35,16 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
     <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <h1 className="text-3xl font-bold text-ink-900 sm:text-4xl">Products</h1>
 
-      {/* Plain GET form: works without JavaScript and keeps the URL in sync. */}
-      <form action="/products" method="get" role="search" className="mt-7 flex gap-2.5">
-        {category && <input type="hidden" name="category" value={category} />}
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
-          <input
-            type="search"
-            name="q"
-            defaultValue={q}
-            maxLength={100}
-            placeholder="Search products"
-            aria-label="Search products"
-            className={`${input} pl-11`}
-          />
-        </div>
-        <button type="submit" className={btnPrimary}>
-          Search
-        </button>
-      </form>
+      {/* Search as you type: results update after a short pause, no button needed. */}
+      <div className="mt-7">
+        <LiveSearchInput
+          action="/products"
+          initialValue={q}
+          preserve={{ category }}
+          placeholder="Search products"
+          ariaLabel="Search products"
+        />
+      </div>
 
       <div className="-mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0" aria-label="Categories">
         <Link href={chipHref()} className={chip(!category)}>All</Link>

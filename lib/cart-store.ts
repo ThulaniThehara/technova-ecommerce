@@ -18,6 +18,7 @@ export const EMPTY_CART: CartItem[] = [];
 const listeners = new Set<() => void>();
 let cachedRaw: string | null = null;
 let cachedItems: CartItem[] = EMPTY_CART;
+let editVersion = 0; // bumped by every change made through the functions below
 
 function isCartItem(v: unknown): v is CartItem {
   const i = v as CartItem;
@@ -60,7 +61,16 @@ function save(items: CartItem[]) {
   } catch {}
   cachedRaw = raw;
   cachedItems = items.length ? items : EMPTY_CART;
+  editVersion += 1;
   listeners.forEach((l) => l());
+}
+
+/** Number of changes made so far. If it moved while a request was in flight, the cart was edited meanwhile. */
+export const getCartVersion = () => editVersion;
+
+/** Replace the whole cart (used when the saved cart from the server arrives after sign-in). */
+export function replaceCart(items: CartItem[]) {
+  save(items);
 }
 
 export function subscribe(listener: () => void) {
@@ -100,4 +110,25 @@ export function removeFromCart(productId: string) {
 
 export function clearCart() {
   save([]);
+}
+
+// ───────────── Which account does this browser cart mirror? ─────────────
+// A guest cart has no owner. Once it has been merged into a customer's saved cart, the browser
+// copy is just a MIRROR of that account's cart, and the id is recorded here. This is what stops
+// "merge" (which adds quantities) from running on every page load and doubling the cart.
+const OWNER_KEY = "technova-cart-owner";
+
+export function getCartOwner(): string | null {
+  try {
+    return window.localStorage.getItem(OWNER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setCartOwner(userId: string | null) {
+  try {
+    if (userId) window.localStorage.setItem(OWNER_KEY, userId);
+    else window.localStorage.removeItem(OWNER_KEY);
+  } catch {}
 }

@@ -17,6 +17,7 @@ datasource db {
 
 enum Role {
   ADMIN
+  CUSTOMER
 }
 
 enum PaymentMethod {
@@ -44,14 +45,21 @@ enum OrderStatus {
 
 // ───────────── Models ─────────────
 
-// Administrative accounts only (no customer registration in scope).
+// Both kinds of account live here, told apart by `role`. Admins and customers have separate
+// login routes and separate session cookies, so one can never be used as the other.
 model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
+  phone        String?
   passwordHash String // bcrypt hash, never the plaintext password
-  role         Role     @default(ADMIN)
+  // No default on purpose: the code always states the role explicitly, so an account can never
+  // become an admin (or a customer) by accident.
+  role         Role
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+  orders       Order[]
+  cart         Cart?
 }
 
 model Category {
@@ -75,6 +83,7 @@ model Product {
   // Restrict: a category that still has products cannot be deleted.
   category    Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   orderItems  OrderItem[]
+  cartItems   CartItem[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -100,6 +109,10 @@ model Order {
   orderStatus      OrderStatus   @default(PENDING)
   // PayHere's own payment reference, stored from the verified notification.
   payherePaymentId String?
+  // The customer account that placed the order. Set from the server-side session, never from the
+  // request body. Optional only because orders placed before accounts existed have no owner.
+  userId           String?
+  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   items            OrderItem[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
@@ -107,6 +120,7 @@ model Order {
   @@index([orderStatus])
   @@index([paymentStatus])
   @@index([createdAt])
+  @@index([userId])
 }
 
 model OrderItem {
@@ -123,5 +137,29 @@ model OrderItem {
   quantity    Int
 
   @@index([orderId])
+  @@index([productId])
+}
+
+// ───────────── Server-side cart (so a cart follows the customer across devices) ─────────────
+// Guests keep their cart in the browser; after login it is merged into this one.
+// The cart stores only product ids and quantities. Prices and stock are always read fresh.
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int
+
+  @@unique([cartId, productId])
   @@index([productId])
 }

@@ -9,7 +9,7 @@ export class OrderError extends HttpError {}
 
 // Stock policy: stock is decremented HERE, when the order is created, inside one transaction.
 // It is restored when the order is CANCELLED or its payment FAILED (handled in later phases).
-export async function createOrder(input: CheckoutInput) {
+export async function createOrder(input: CheckoutInput, userId: string) {
   // Merge duplicate lines so the same product can't be listed twice to dodge the stock check.
   const wanted = new Map<string, number>();
   for (const { productId, quantity } of input.items) {
@@ -49,9 +49,18 @@ export async function createOrder(input: CheckoutInput) {
         if (result.count === 0) throw new OrderError(`Insufficient stock for ${product.name}`);
       }
 
-      // 4. Create the order with snapshot fields (name + price at purchase time).
+      // 4. The customer is checking out their cart, so empty the saved cart in this same
+      //    transaction: if the order fails, the cart is kept; if it succeeds, the ordered items
+      //    cannot come back from the server on the next page load.
+      await tx.cartItem.deleteMany({ where: { cart: { userId } } });
+
+      // 5. Create the order with snapshot fields (name + price at purchase time).
       return tx.order.create({
         data: {
+          // The owner is the authenticated customer. It is passed in by the route handler from
+          // the verified session and is deliberately NOT part of CheckoutInput, so a request
+          // body can never claim an order for somebody else.
+          userId,
           customerName: input.customerName,
           customerEmail: input.customerEmail,
           phone: input.phone,
@@ -152,6 +161,7 @@ type OrderWithItems = Prisma.OrderGetPayload<{ include: { items: true } }>;
 export function serializeOrder(order: OrderWithItems) {
   return {
     id: order.id,
+    userId: order.userId,
     orderNumber: order.orderNumber,
     orderCode: formatOrderNumber(order.orderNumber),
     customerName: order.customerName,

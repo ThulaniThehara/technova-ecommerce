@@ -12,7 +12,7 @@ const tabs = [
   { href: "/admin/orders", label: "Orders" },
 ];
 
-export default function AdminHeader({ name }: { name: string }) {
+export default function AdminHeader() {
   const pathname = usePathname();
 
   return (
@@ -24,15 +24,15 @@ export default function AdminHeader({ name }: { name: string }) {
             Admin
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <Link
             href="/"
             target="_blank"
-            className="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-ink-600 transition hover:bg-surface sm:inline-flex"
+            className="inline-flex items-center gap-2 rounded-xl border border-line bg-white px-3.5 py-2 text-sm font-semibold text-ink-700 shadow-sm transition hover:border-slate-300 hover:bg-surface hover:text-ink-900 active:scale-[0.98]"
           >
-            View store <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+            <span>View store</span>
+            <ExternalLink className="h-3.5 w-3.5 text-slate-400" aria-hidden />
           </Link>
-          <span className="hidden text-sm text-slate-500 md:inline">{name}</span>
           <LogoutButton />
         </div>
       </div>

@@ -93,3 +93,50 @@ export const orderPatchSchema = z
   })
   .strict()
   .refine((v) => v.orderStatus !== undefined || v.paymentStatus !== undefined, "Nothing to update");
+
+// ───────────── Customer accounts ─────────────
+
+// bcrypt only uses the first 72 bytes, so longer passwords add nothing; the cap also bounds the work.
+export const passwordRules = z
+  .string()
+  .min(8, "Use at least 8 characters")
+  .max(72, "Use at most 72 characters")
+  .regex(/[a-z]/, "Include a lowercase letter")
+  .regex(/[A-Z]/, "Include an uppercase letter")
+  .regex(/[0-9]/, "Include a number");
+
+const fullName = z.string().trim().min(2, "Enter your full name").max(100, "Name is too long");
+const email = z.string().trim().toLowerCase().pipe(z.email("Enter a valid email address")).pipe(z.string().max(254));
+const mobile = z.string().trim().regex(PHONE_REGEX, "Enter a valid Sri Lankan mobile number, e.g. 0771234567");
+
+export const signupSchema = z
+  .object({
+    name: fullName,
+    email,
+    phone: mobile,
+    password: passwordRules,
+    confirmPassword: z.string().min(1, "Confirm your password"),
+  })
+  .refine((v) => v.password === v.confirmPassword, { path: ["confirmPassword"], message: "Passwords do not match" });
+
+export type SignupInput = z.infer<typeof signupSchema>;
+export type SignupFieldErrors = Partial<Record<keyof SignupInput, string[]>>;
+
+// Customer login uses the same shape as admin login (email + password).
+export const customerLoginSchema = loginSchema;
+
+// Email is fixed after signup; only these two are editable.
+export const profileSchema = z.object({ name: fullName, phone: mobile });
+export type ProfileInput = z.infer<typeof profileSchema>;
+export type ProfileFieldErrors = Partial<Record<keyof ProfileInput, string[]>>;
+
+// ───────────── Server-side cart ─────────────
+
+// The cart stores ONLY product ids and quantities. Names, prices and stock are always read fresh
+// from the database, so a stale or tampered cart can never carry a price.
+export const cartItemsSchema = z.object({
+  items: z
+    .array(z.object({ productId: z.string().min(1).max(40), quantity: z.number().int().min(1).max(100) }))
+    .max(30, "Too many different items in the cart"),
+});
+export type CartItemsInput = z.infer<typeof cartItemsSchema>;

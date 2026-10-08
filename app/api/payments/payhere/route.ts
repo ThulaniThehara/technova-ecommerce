@@ -7,6 +7,7 @@ import {
   PAYHERE_CURRENCY,
   splitCustomerName,
 } from "@/lib/payhere";
+import { requireCustomer } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatOrderNumber, toPayHereAmount } from "@/lib/utils";
 import { handleError } from "@/lib/api";
@@ -24,6 +25,10 @@ const bodySchema = z.object({ orderId: z.string().min(1) });
  * Rs. 1 for a Rs. 300,000 order: the hash would not match the amount PayHere receives.
  */
 async function handle(request: Request) {
+  // Only a signed-in customer can start a payment, and only for their OWN order (checked below).
+  const { customer, response: authResponse } = await requireCustomer();
+  if (authResponse) return authResponse;
+
   let body: unknown;
   try {
     body = await request.json();
@@ -52,7 +57,8 @@ async function handle(request: Request) {
     include: { items: true },
   });
 
-  if (!order) {
+  // Someone else's order gets the same answer as a missing one, so ids can't be probed.
+  if (!order || order.userId !== customer.id) {
     return NextResponse.json({ success: false, message: "Order not found" }, { status: 404 });
   }
   if (order.paymentMethod !== "PAYHERE") {

@@ -35,10 +35,21 @@ function postToPayHere(checkoutUrl: string, fields: Record<string, string>) {
   form.submit();
 }
 
-export default function CheckoutForm({ payHereEnabled }: { payHereEnabled: boolean }) {
+export default function CheckoutForm({
+  payHereEnabled,
+  prefill,
+}: {
+  payHereEnabled: boolean;
+  prefill: { name: string; email: string; phone: string };
+}) {
   const router = useRouter();
   const { items, ready, subtotal } = useCart();
-  const [form, setForm] = useState<FormState>(initial);
+  const [form, setForm] = useState<FormState>({
+    ...initial,
+    customerName: prefill.name,
+    customerEmail: prefill.email,
+    phone: prefill.phone,
+  });
   const [errors, setErrors] = useState<CheckoutFieldErrors>({});
   const [paymentMethod, setPaymentMethod] = useState<"WHATSAPP" | "PAYHERE">("WHATSAPP");
   const [submitting, setSubmitting] = useState(false);
@@ -86,6 +97,12 @@ export default function CheckoutForm({ payHereEnabled }: { payHereEnabled: boole
         body: JSON.stringify(parsed.data),
       });
       const json = await res.json();
+      if (res.status === 401) {
+        // Session expired (or signed out in another tab). The cart is in the browser, so it is safe.
+        toast.error("Your session has expired. Please sign in again to finish your order.");
+        router.push("/login?redirect=/checkout");
+        return;
+      }
       if (!res.ok || !json.success) {
         if (json.errors) setErrors(json.errors);
         toast.error(json.message ?? "Could not place your order");

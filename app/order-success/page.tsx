@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import PaymentStatusPoller from "@/components/checkout/PaymentStatusPoller";
+import { getCustomer } from "@/lib/auth";
 import { serializeOrder } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
 import { btnDark, btnOutline, card } from "@/lib/ui";
@@ -29,6 +30,8 @@ export default async function OrderSuccessPage({ searchParams }: PageProps<"/ord
 
   const row = await prisma.order.findUnique({ where: { id }, include: { items: true } });
   if (!row) notFound();
+  // Only the customer who placed the order may view it (legacy orders without an owner excepted).
+  if (row.userId && row.userId !== (await getCustomer())?.id) notFound();
   const order = serializeOrder(row);
 
   const whatsappNumber = getBusinessWhatsAppNumber();

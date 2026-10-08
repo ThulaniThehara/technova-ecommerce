@@ -1,4 +1,6 @@
 import { Prisma } from "../generated/prisma/client";
+import { sortCategories } from "./category-icons";
+import { LOW_STOCK_THRESHOLD } from "./constants";
 import { HttpError } from "./errors";
 import { prisma } from "./prisma";
 import { slugify } from "./slug";
@@ -52,9 +54,32 @@ async function assertCategoryExists(categoryId: string) {
 
 const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
-export async function listAdminProducts() {
-  const rows = await prisma.product.findMany({ include, orderBy: [{ createdAt: "desc" }, { name: "asc" }] });
+export type AdminProductFilters = {
+  /** Category slug. */
+  category?: string;
+  /** Case-insensitive match on the product name. */
+  q?: string;
+  /** Only products at or below the low-stock threshold (includes out of stock). */
+  lowStock?: boolean;
+};
+
+export async function listAdminProducts({ category, q, lowStock }: AdminProductFilters = {}) {
+  const search = q?.trim().slice(0, 100);
+  const where: Prisma.ProductWhereInput = {
+    ...(category ? { category: { slug: category } } : {}),
+    ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
+    ...(lowStock ? { stock: { lte: LOW_STOCK_THRESHOLD } } : {}),
+  };
+  const rows = await prisma.product.findMany({ where, include, orderBy: [{ createdAt: "desc" }, { name: "asc" }] });
   return rows.map(serializeAdminProduct);
+}
+
+// Sidebar data: every category with how many products it holds (active AND inactive: admins see all).
+export async function listAdminCategories() {
+  const categories = await prisma.category.findMany({
+    select: { id: true, name: true, slug: true, _count: { select: { products: true } } },
+  });
+  return sortCategories(categories).map((c) => ({ id: c.id, name: c.name, slug: c.slug, count: c._count.products }));
 }
 
 export async function getAdminProduct(id: string) {
